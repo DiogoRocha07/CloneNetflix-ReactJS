@@ -1,25 +1,75 @@
-import logo from './logo.svg';
-import './App.css';
+import { useEffect, useState } from "react";
+import Tmdb from "./Tmdb";
+import MovieRow from "./components/MovieRow";
+import "./App.css";
+import FeaturedMovie from "./components/FeaturedMovie";
+import Header from "./components/Header";
 
-function App() {
+export default function App() {
+  const [movieList, setMovieList] = useState([]);
+  const [featuredData, setFeaturedData] = useState(null);
+  const [blackHeader, setBlackHeader] = useState(false);
+
+  useEffect(() => {
+    const loadAll = async () => {
+      // Pegando a lista TOTAL
+      let list = await Tmdb.getHomeList();
+      setMovieList(list);
+
+      // Pegando o Featured
+      let originals = list.filter((i) => i.slug === "originals");
+      let randomChosen = Math.floor(
+        Math.random() * (originals[0].items.results.length - 1)
+      );
+      let chosen = originals[0].items.results[randomChosen];
+
+      let chosenInfo = await Tmdb.getMovieInfo(chosen.id, "tv");
+
+      setFeaturedData(chosenInfo);
+    };
+
+    loadAll();
+  }, []);
+
+  useEffect(() => {
+    const scrollListener = () => {
+      window.scrollY > 10 ? setBlackHeader(true) : setBlackHeader(false);
+    };
+
+    window.addEventListener("scroll", scrollListener);
+
+    return () => {
+      window.removeEventListener("scroll", scrollListener);
+    };
+  }, []);
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+    <div className="page">
+      <Header black={blackHeader} />
+
+      {featuredData && <FeaturedMovie item={featuredData} />}
+      <section className="lists">
+        {movieList.map((item) => {
+          return (
+            <MovieRow key={item.title} title={item.title} items={item.items} />
+          );
+        })}
+      </section>
+
+      <footer>
+        Practicing ReactJS
+        <span role="img" aria-label="mão acenando">
+          👋
+        </span>
+        <br />
+        API - Themovie.db.org
+      </footer>
+
+      {movieList.length <= 0 && (
+        <div className="loading">
+          <img src="https://i.gifer.com/8Etj.gif" alt="Carregando" />
+        </div>
+      )}
     </div>
   );
 }
-
-export default App;
